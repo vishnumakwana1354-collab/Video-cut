@@ -3,6 +3,8 @@ import subprocess
 import os
 import tempfile
 import math
+import zipfile
+import io
 
 # Auto install required packages automatically if missing
 def install_package(package, flags=None):
@@ -25,20 +27,18 @@ except ImportError:
 VideoFileClip = None
 AudioFileClip = None
 vfx = None
-afx = None
 
 try:
-    from moviepy.editor import VideoFileClip, AudioFileClip, vfx, afx
+    from moviepy.editor import VideoFileClip, AudioFileClip, vfx
 except ImportError:
     try:
         from moviepy.video.io.VideoFileClip import VideoFileClip
         from moviepy.audio.io.AudioFileClip import AudioFileClip
         import moviepy.video.fx.all as vfx
-        import moviepy.audio.fx.all as afx
     except ImportError:
         install_package("moviepy", ["--break-system-packages"])
         try:
-            from moviepy.editor import VideoFileClip, AudioFileClip, vfx, afx
+            from moviepy.editor import VideoFileClip, AudioFileClip, vfx
         except ImportError:
             import moviepy as mp
             VideoFileClip = mp.VideoFileClip
@@ -46,7 +46,7 @@ except ImportError:
 
 # Page configuration
 st.set_page_config(
-    page_title="JGV ShotCut Pro Video Studio & Splitter",
+    page_title="JGV ShotCut Pro Splitter & Zip Downloader",
     page_icon="🎬",
     layout="wide"
 )
@@ -54,16 +54,16 @@ st.set_page_config(
 # Language Dictionary
 translations = {
     "gu": {
-        "title": "JGV ShotCut પ્રો વીડિયો એડિટર અને સ્પ્લિટ ઓલ-ઈન-વન એપ 🎬",
-        "subtitle": "વીડિયો સ્પ્લિટ, સ્પીડ કંટ્રોલ, ઓડિયો ઉમેરવો/હટાવવો, રિવર્સ, ક્રોપ અને ઈન્સ્ટન્ટ ડાઉનલોડ કરો",
-        "upload_label": "૧. મુખ્ય વીડિયો ફાઈલ અપલોડ કરો (Upload Main Video):",
-        "audio_upload_label": "નવું સંગીત/ઓડિયો ઉમેરો (MP3 / WAV / M4A):",
-        "tool_selection": "ટૂલ પસંદ કરો (Select Editing Tool):",
+        "title": "JGV ShotCut પ્રો વીડિયો એડિટર અને ઝીપ સ્પ્લિટ ડાઉનલોડર 🎬",
+        "subtitle": "વીડિયો સ્પ્લિટ, સ્પીડ કંટ્રોલ, ઓડિયો સેટિંગ્સ અને તમામ ક્લિપ્સ એક જ ઝીપ ફાઈલમાં ડાઉનલોડ કરો",
+        "upload_label": "૧. મુખ્ય વીડિયો ફાઈલ અપલોડ કરો (Upload Video):",
+        "audio_upload_label": "નવું સંગીત/ઓડિયો ઉમેરો (MP3 / WAV):",
+        "tool_selection": "ટૂલ પસંદ કરો (Select Tool):",
         "opt_split": "✂️ વીડિયો સ્પ્લિટ અને કટર (Video Splitter)",
-        "opt_audio": "🎵 ઓડિયો મ્યુઝિક સેટિંગ્સ (Audio / Music Tools)",
+        "opt_audio": "🎵 ઓડિયો મ્યુઝિક સેટિંગ્સ (Audio Tools)",
         "opt_speed": "⚡ સ્પીડ અને સ્લો મોશન (Speed & Slow-Mo)",
-        "opt_reverse": "🔄 રિવર્સ વીડિયો (Play Video in Reverse)",
-        "opt_crop": "📐 ક્રોપ અને રેશિયો (Crop & Aspect Ratio)",
+        "opt_reverse": "🔄 રિવર્સ વીડિયો (Play Reverse)",
+        "opt_crop": "📐 ક્રોપ અને રેશિયો (Crop Aspect Ratio)",
         "opt_extract": "🔊 વીડિયોમાંથી ઓડિયો અલગ કરો (Extract MP3)",
         "split_method": "સ્પ્લિટ પદ્ધતિ પસંદ કરો:",
         "opt_duration": "ચોક્કસ સમયગાળા મુજબ (By Duration)",
@@ -75,19 +75,20 @@ translations = {
         "end_label": "અંતનો સમય (સેકન્ડ):",
         "audio_action": "ઓડિયો વિકલ્પ પસંદ કરો:",
         "audio_mute": "મૂળ સંગીત દુર કરવું (Mute Original Audio)",
-        "audio_replace": "નવું સંગીત ઉમેરવું (Add/Replace Music)",
+        "audio_replace": "નવું સંગીત ઉમેરવું (Add Music)",
         "speed_label": "વીડિયો સ્પીડ પસંદ કરો (1.0x સામાન્ય છે, 0.5x સ્લો મોશન, 2.0x ફાસ્ટ):",
-        "ratio_label": "એસ્પેક્ટ રેશિયો પસંદ કરો (For IG, YouTube, TikTok):",
+        "ratio_label": "એસ્પેક્ટ રેશિયો પસંદ કરો (Reels, YT, Post):",
         "btn_start": "પ્રોસેસ શરૂ કરો (Start Processing) 🚀",
         "success": "પ્રોસેસ સફળતાપૂર્વક પૂર્ણ થઈ છે!",
-        "download": "ડાઉનલોડ કરો (Download)",
+        "download_all_zip": "📦 તમામ કટ થયેલા વીડિયો એક સાથે ઝીપ ફાઈલમાં ડાઉનલોડ કરો (Download All as ZIP) ✅",
+        "download_single": "📥 ડાઉનલોડ ક્લિપ:",
         "error": "ભૂલ આવી:"
     },
     "en": {
-        "title": "JGV ShotCut Pro Video Studio & Splitter 🎬",
-        "subtitle": "Pro All-in-One Editor: Split, Change Speed, Add/Remove Audio, Reverse, Crop & Instant Download",
+        "title": "JGV ShotCut Pro Video Studio & ZIP Downloader 🎬",
+        "subtitle": "Pro All-in-One Editor: Split, Audio Tools, Speed Control, Reverse & Single Click ZIP Download",
         "upload_label": "1. Upload Main Video File:",
-        "audio_upload_label": "Upload New Audio/Music (MP3 / WAV / M4A):",
+        "audio_upload_label": "Upload New Audio/Music (MP3 / WAV):",
         "tool_selection": "Select Editing Tool:",
         "opt_split": "✂️ Video Splitter & Cutter",
         "opt_audio": "🎵 Audio / Music Editor",
@@ -104,13 +105,14 @@ translations = {
         "start_label": "Start Time (seconds):",
         "end_label": "End Time (seconds):",
         "audio_action": "Select Audio Option:",
-        "audio_mute": "Remove original music/audio (Mute)",
-        "audio_replace": "Add/Replace new background music",
+        "audio_mute": "Remove original audio (Mute)",
+        "audio_replace": "Add/Replace background music",
         "speed_label": "Select Video Speed (1.0x Normal, 0.5x Slo-Mo, 2.0x Fast):",
         "ratio_label": "Select Aspect Ratio:",
         "btn_start": "Start Processing 🚀",
         "success": "Processing completed successfully!",
-        "download": "Download",
+        "download_all_zip": "📦 Download All Cut Videos in One ZIP File ✅",
+        "download_single": "📥 Download Clip:",
         "error": "Error occurred:"
     }
 }
@@ -151,7 +153,7 @@ if uploaded_file is not None:
         with col_info:
             st.info(f"⏱️ **સમયગાળો (Duration):** {round(total_duration, 2)} સેકન્ડ")
             st.info(f"📐 **રિઝોલ્યુશન (Resolution):** {clip.w} x {clip.h} px")
-            st.info(f"🔊 **ઓડિયો સ્ત્રોત:** {'હા (Audio Present)' if clip.audio else 'ના (Muted)'}")
+            st.info(f"🔊 **ઓડિયો:** {'હા (Present)' if clip.audio else 'ના (Muted)'}")
 
         st.markdown("---")
 
@@ -232,7 +234,7 @@ if uploaded_file is not None:
 
         # Process Button
         if st.button(t["btn_start"], type="primary"):
-            st.markdown("### ⚙️ પ્રોસેસ ચાલુ છે (Processing Video)...")
+            st.markdown("### ⚙️ પ્રોસેસ ચાલુ છે (Processing)...")
             progress_bar = st.progress(0)
             generated_clips = []
 
@@ -326,13 +328,35 @@ if uploaded_file is not None:
 
             st.success(t["success"])
 
-            # Automatic / Instant Download Section
-            st.markdown("### 📥 ડાઉનલોડ સેક્શન (Instant Download)")
+            # 📦 ZIP DOWNLOAD FOR ALL CUT CLIPS IN ONE CLICK
+            if len(generated_clips) > 1:
+                st.markdown("### 📦 એક સાથે ડાઉનલોડ કરો (ZIP Download)")
+                
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+                    for out_file, _ in generated_clips:
+                        if os.path.exists(out_file):
+                            zip_file.write(out_file, os.path.basename(out_file))
+
+                zip_buffer.seek(0)
+
+                st.download_button(
+                    label=t["download_all_zip"],
+                    data=zip_buffer,
+                    file_name="all_cut_video_clips.zip",
+                    mime="application/zip",
+                    type="primary",
+                    key="dl_all_zip"
+                )
+                st.markdown("---")
+
+            # INDIVIDUAL DOWNLOAD BUTTONS
+            st.markdown("### 📥 અલગ-અલગ ક્લિપ ડાઉનલોડ કરો")
             for idx, (out_file, mime_type) in enumerate(generated_clips):
                 if os.path.exists(out_file):
                     with open(out_file, "rb") as file_data:
                         st.download_button(
-                            label=f"⬇️ ડાઉનલોડ કરો: {os.path.basename(out_file)} ✅",
+                            label=f"{t['download_single']} {os.path.basename(out_file)} ✅",
                             data=file_data,
                             file_name=os.path.basename(out_file),
                             mime=mime_type,
