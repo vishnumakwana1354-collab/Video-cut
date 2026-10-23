@@ -21,22 +21,24 @@ except ImportError:
     install_package("streamlit", ["--break-system-packages"])
     import streamlit as st
 
-# Safe multi-version import for MoviePy & AudioFileClip
+# Safe multi-version import for MoviePy
 VideoFileClip = None
 AudioFileClip = None
 vfx = None
+afx = None
 
 try:
-    from moviepy.editor import VideoFileClip, AudioFileClip, vfx
+    from moviepy.editor import VideoFileClip, AudioFileClip, vfx, afx
 except ImportError:
     try:
         from moviepy.video.io.VideoFileClip import VideoFileClip
         from moviepy.audio.io.AudioFileClip import AudioFileClip
         import moviepy.video.fx.all as vfx
+        import moviepy.audio.fx.all as afx
     except ImportError:
         install_package("moviepy", ["--break-system-packages"])
         try:
-            from moviepy.editor import VideoFileClip, AudioFileClip, vfx
+            from moviepy.editor import VideoFileClip, AudioFileClip, vfx, afx
         except ImportError:
             import moviepy as mp
             VideoFileClip = mp.VideoFileClip
@@ -44,22 +46,25 @@ except ImportError:
 
 # Page configuration
 st.set_page_config(
-    page_title="JGV Studio Video Editor & Splitter",
+    page_title="JGV ShotCut Pro Video Studio & Splitter",
     page_icon="🎬",
-    layout="centered"
+    layout="wide"
 )
 
 # Language Dictionary
 translations = {
     "gu": {
-        "title": "JGV વીડિયો એડિટર અને સ્પ્લિટ ઓલ-ઈન-વન એપ 🎬",
-        "subtitle": "વીડિયો કટ કરો, સ્પીડ બદલો, ઓડિયો ઉમેરો/હટાવો અને સરળતાથી ડાઉનલોડ કરો",
-        "upload_label": "૧. મુખ્ય વીડિયો ફાઈલ અપલોડ કરો:",
-        "audio_upload_label": "નવું સંગીત/ઓડિયો અપલોડ કરો (MP3 / WAV):",
-        "tool_selection": "તમારું ટૂલ પસંદ કરો:",
-        "opt_split": "✂️ વીડિયો સ્પ્લિટ (તુકડા કરવા)",
-        "opt_audio": "🎵 ઓડિયો સેટિંગ્સ (સંગીત એડ / રીમુવ કરવું)",
-        "opt_speed": "⚡ વીડિયો સ્પીડ (ફાસ્ટ / સ્લો કરવું)",
+        "title": "JGV ShotCut પ્રો વીડિયો એડિટર અને સ્પ્લિટ ઓલ-ઈન-વન એપ 🎬",
+        "subtitle": "વીડિયો સ્પ્લિટ, સ્પીડ કંટ્રોલ, ઓડિયો ઉમેરવો/હટાવવો, રિવર્સ, ક્રોપ અને ઈન્સ્ટન્ટ ડાઉનલોડ કરો",
+        "upload_label": "૧. મુખ્ય વીડિયો ફાઈલ અપલોડ કરો (Upload Main Video):",
+        "audio_upload_label": "નવું સંગીત/ઓડિયો ઉમેરો (MP3 / WAV / M4A):",
+        "tool_selection": "ટૂલ પસંદ કરો (Select Editing Tool):",
+        "opt_split": "✂️ વીડિયો સ્પ્લિટ અને કટર (Video Splitter)",
+        "opt_audio": "🎵 ઓડિયો મ્યુઝિક સેટિંગ્સ (Audio / Music Tools)",
+        "opt_speed": "⚡ સ્પીડ અને સ્લો મોશન (Speed & Slow-Mo)",
+        "opt_reverse": "🔄 રિવર્સ વીડિયો (Play Video in Reverse)",
+        "opt_crop": "📐 ક્રોપ અને રેશિયો (Crop & Aspect Ratio)",
+        "opt_extract": "🔊 વીડિયોમાંથી ઓડિયો અલગ કરો (Extract MP3)",
         "split_method": "સ્પ્લિટ પદ્ધતિ પસંદ કરો:",
         "opt_duration": "ચોક્કસ સમયગાળા મુજબ (By Duration)",
         "opt_parts": "સરખા ભાગોની સંખ્યા મુજબ (By Equal Parts)",
@@ -69,24 +74,27 @@ translations = {
         "start_label": "શરૂઆતનો સમય (સેકન્ડ):",
         "end_label": "અંતનો સમય (સેકન્ડ):",
         "audio_action": "ઓડિયો વિકલ્પ પસંદ કરો:",
-        "audio_mute": "મૂળ સંગીત/ઓડિયો દુર કરવો (Mute Audio)",
-        "audio_replace": "નવું સંગીત/ઓડિયો ઉમેરવો (Add/Replace Music)",
-        "speed_label": "વીડિયો સ્પીડ પસંદ કરો (1.0x સાધારણ સ્પીડ છે):",
-        "btn_start": "પ્રોસેસ શરૂ કરો 🚀",
+        "audio_mute": "મૂળ સંગીત દુર કરવું (Mute Original Audio)",
+        "audio_replace": "નવું સંગીત ઉમેરવું (Add/Replace Music)",
+        "speed_label": "વીડિયો સ્પીડ પસંદ કરો (1.0x સામાન્ય છે, 0.5x સ્લો મોશન, 2.0x ફાસ્ટ):",
+        "ratio_label": "એસ્પેક્ટ રેશિયો પસંદ કરો (For IG, YouTube, TikTok):",
+        "btn_start": "પ્રોસેસ શરૂ કરો (Start Processing) 🚀",
         "success": "પ્રોસેસ સફળતાપૂર્વક પૂર્ણ થઈ છે!",
-        "download_all": "📥 બધા વીડિયો એકસાથે ડાઉનલોડ કરો",
-        "download": "ડાઉનલોડ",
+        "download": "ડાઉનલોડ કરો (Download)",
         "error": "ભૂલ આવી:"
     },
     "en": {
-        "title": "JGV Video Editor & Splitter All-in-One 🎬",
-        "subtitle": "Split videos, change speed, add/remove music, and download easily",
+        "title": "JGV ShotCut Pro Video Studio & Splitter 🎬",
+        "subtitle": "Pro All-in-One Editor: Split, Change Speed, Add/Remove Audio, Reverse, Crop & Instant Download",
         "upload_label": "1. Upload Main Video File:",
-        "audio_upload_label": "Upload New Audio/Music (MP3 / WAV):",
-        "tool_selection": "Select Your Tool:",
-        "opt_split": "✂️ Video Splitter",
-        "opt_audio": "🎵 Audio Settings (Add/Remove Music)",
-        "opt_speed": "⚡ Video Speed (Fast / Slow)",
+        "audio_upload_label": "Upload New Audio/Music (MP3 / WAV / M4A):",
+        "tool_selection": "Select Editing Tool:",
+        "opt_split": "✂️ Video Splitter & Cutter",
+        "opt_audio": "🎵 Audio / Music Editor",
+        "opt_speed": "⚡ Video Speed (Fast & Slow Motion)",
+        "opt_reverse": "🔄 Video Reverser",
+        "opt_crop": "📐 Crop & Aspect Ratio (IG, Shorts, Reels)",
+        "opt_extract": "🔊 Extract MP3 Audio from Video",
         "split_method": "Select Split Method:",
         "opt_duration": "By Duration (in seconds)",
         "opt_parts": "By Equal Parts",
@@ -98,10 +106,10 @@ translations = {
         "audio_action": "Select Audio Option:",
         "audio_mute": "Remove original music/audio (Mute)",
         "audio_replace": "Add/Replace new background music",
-        "speed_label": "Select Video Speed Multiplier (1.0x is Normal):",
+        "speed_label": "Select Video Speed (1.0x Normal, 0.5x Slo-Mo, 2.0x Fast):",
+        "ratio_label": "Select Aspect Ratio:",
         "btn_start": "Start Processing 🚀",
         "success": "Processing completed successfully!",
-        "download_all": "📥 Download All Clips",
         "download": "Download",
         "error": "Error occurred:"
     }
@@ -111,10 +119,10 @@ translations = {
 if "lang" not in st.session_state:
     st.session_state["lang"] = "gu"
 
-col_title, col_lang = st.columns([4, 1])
+col_title, col_lang = st.columns([5, 1])
 
 with col_lang:
-    if st.button("EN / GU"):
+    if st.button("🌐 EN / GU"):
         st.session_state["lang"] = "en" if st.session_state["lang"] == "gu" else "gu"
 
 t = translations[st.session_state["lang"]]
@@ -126,7 +134,7 @@ with col_title:
 st.markdown("---")
 
 # Main Video Upload
-uploaded_file = st.file_uploader(t["upload_label"], type=["mp4", "mov", "avi", "mkv"])
+uploaded_file = st.file_uploader(t["upload_label"], type=["mp4", "mov", "avi", "mkv", "webm"])
 
 if uploaded_file is not None:
     tfile = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
@@ -137,19 +145,37 @@ if uploaded_file is not None:
         clip = VideoFileClip(video_path)
         total_duration = clip.duration
 
-        st.video(video_path)
-        st.info(f"⏱️ વીડિયોનો સમયગાળો (Duration): **{round(total_duration, 2)} સેકન્ડ**")
+        col_preview, col_info = st.columns([2, 1])
+        with col_preview:
+            st.video(video_path)
+        with col_info:
+            st.info(f"⏱️ **સમયગાળો (Duration):** {round(total_duration, 2)} સેકન્ડ")
+            st.info(f"📐 **રિઝોલ્યુશન (Resolution):** {clip.w} x {clip.h} px")
+            st.info(f"🔊 **ઓડિયો સ્ત્રોત:** {'હા (Audio Present)' if clip.audio else 'ના (Muted)'}")
+
+        st.markdown("---")
 
         # Feature selection
-        tool = st.radio(t["tool_selection"], [t["opt_split"], t["opt_audio"], t["opt_speed"]])
+        tool = st.radio(
+            t["tool_selection"],
+            [
+                t["opt_split"],
+                t["opt_audio"],
+                t["opt_speed"],
+                t["opt_reverse"],
+                t["opt_crop"],
+                t["opt_extract"]
+            ],
+            horizontal=True
+        )
 
         segments = []
         audio_file_path = None
         speed_factor = 1.0
-        mode = "split"
+        aspect_ratio = "Original"
 
+        # 1. SPLIT TOOL
         if tool == t["opt_split"]:
-            mode = "split"
             method = st.selectbox(
                 t["split_method"],
                 [t["opt_duration"], t["opt_parts"], t["opt_range"]]
@@ -183,8 +209,8 @@ if uploaded_file is not None:
                 else:
                     st.error("અંતનો સમય શરૂઆતના સમય કરતા વધારે હોવો જોઈએ.")
 
+        # 2. AUDIO TOOL
         elif tool == t["opt_audio"]:
-            mode = "audio"
             audio_opt = st.radio(t["audio_action"], [t["audio_mute"], t["audio_replace"]])
             if audio_opt == t["audio_replace"]:
                 audio_upload = st.file_uploader(t["audio_upload_label"], type=["mp3", "wav", "m4a", "aac"])
@@ -193,29 +219,38 @@ if uploaded_file is not None:
                     afile.write(audio_upload.read())
                     audio_file_path = afile.name
 
+        # 3. SPEED TOOL
         elif tool == t["opt_speed"]:
-            mode = "speed"
             speed_factor = st.slider(t["speed_label"], min_value=0.25, max_value=3.0, value=1.5, step=0.25)
+
+        # 4. CROP TOOL
+        elif tool == t["opt_crop"]:
+            aspect_ratio = st.selectbox(
+                t["ratio_label"],
+                ["Original", "9:16 (Instagram Reels / TikTok)", "16:9 (YouTube Landscape)", "1:1 (Instagram Post)"]
+            )
 
         # Process Button
         if st.button(t["btn_start"], type="primary"):
-            st.markdown("### ⚙️ પ્રોસેસ ચાલુ છે...")
+            st.markdown("### ⚙️ પ્રોસેસ ચાલુ છે (Processing Video)...")
             progress_bar = st.progress(0)
             generated_clips = []
 
-            if mode == "split":
+            # 1. SPLIT PROCESSING
+            if tool == t["opt_split"]:
                 for index, (start_time, end_time) in enumerate(segments):
                     if hasattr(clip, 'subclip'):
                         sub_clip = clip.subclip(start_time, end_time)
                     else:
                         sub_clip = clip.subclipped(start_time, end_time)
 
-                    out_path = f"clip_{index + 1}.mp4"
+                    out_path = f"split_clip_{index + 1}.mp4"
                     sub_clip.write_videofile(out_path, codec="libx264", audio_codec="aac", logger=None)
-                    generated_clips.append(out_path)
+                    generated_clips.append((out_path, "video/mp4"))
                     progress_bar.progress((index + 1) / len(segments))
 
-            elif mode == "audio":
+            # 2. AUDIO PROCESSING
+            elif tool == t["opt_audio"]:
                 out_path = "edited_audio_video.mp4"
                 if audio_opt == t["audio_mute"]:
                     edited_clip = clip.without_audio() if hasattr(clip, 'without_audio') else clip.set_audio(None)
@@ -227,10 +262,11 @@ if uploaded_file is not None:
                         edited_clip = clip
 
                 edited_clip.write_videofile(out_path, codec="libx264", audio_codec="aac", logger=None)
-                generated_clips.append(out_path)
+                generated_clips.append((out_path, "video/mp4"))
                 progress_bar.progress(1.0)
 
-            elif mode == "speed":
+            # 3. SPEED PROCESSING
+            elif tool == t["opt_speed"]:
                 out_path = f"speed_{speed_factor}x_video.mp4"
                 if vfx and hasattr(vfx, 'speedx'):
                     edited_clip = vfx.speedx(clip, speed_factor)
@@ -240,23 +276,68 @@ if uploaded_file is not None:
                     edited_clip = clip
 
                 edited_clip.write_videofile(out_path, codec="libx264", audio_codec="aac", logger=None)
-                generated_clips.append(out_path)
+                generated_clips.append((out_path, "video/mp4"))
                 progress_bar.progress(1.0)
+
+            # 4. REVERSE PROCESSING
+            elif tool == t["opt_reverse"]:
+                out_path = "reversed_video.mp4"
+                if vfx and hasattr(vfx, 'time_mirror'):
+                    edited_clip = vfx.time_mirror(clip)
+                elif hasattr(clip, 'fx'):
+                    edited_clip = clip.fx(vfx.time_mirror)
+                else:
+                    edited_clip = clip
+
+                edited_clip.write_videofile(out_path, codec="libx264", audio_codec="aac", logger=None)
+                generated_clips.append((out_path, "video/mp4"))
+                progress_bar.progress(1.0)
+
+            # 5. CROP PROCESSING
+            elif tool == t["opt_crop"]:
+                out_path = "cropped_video.mp4"
+                w, h = clip.w, clip.h
+
+                if aspect_ratio == "9:16 (Instagram Reels / TikTok)":
+                    target_w = int(h * (9 / 16))
+                    edited_clip = clip.crop(x_center=w / 2, width=min(w, target_w))
+                elif aspect_ratio == "16:9 (YouTube Landscape)":
+                    target_h = int(w * (9 / 16))
+                    edited_clip = clip.crop(y_center=h / 2, height=min(h, target_h))
+                elif aspect_ratio == "1:1 (Instagram Post)":
+                    min_dim = min(w, h)
+                    edited_clip = clip.crop(x_center=w / 2, y_center=h / 2, width=min_dim, height=min_dim)
+                else:
+                    edited_clip = clip
+
+                edited_clip.write_videofile(out_path, codec="libx264", audio_codec="aac", logger=None)
+                generated_clips.append((out_path, "video/mp4"))
+                progress_bar.progress(1.0)
+
+            # 6. AUDIO EXTRACTION (MP3)
+            elif tool == t["opt_extract"]:
+                out_path = "extracted_audio.mp3"
+                if clip.audio:
+                    clip.audio.write_audiofile(out_path, logger=None)
+                    generated_clips.append((out_path, "audio/mp3"))
+                    progress_bar.progress(1.0)
+                else:
+                    st.error("આ વીડિયોમાં ઓડિયો નથી!")
 
             st.success(t["success"])
 
-            # Automatic / Instant Download Buttons
-            st.markdown("### 📥 ડાઉનલોડ સેક્શન")
-            for idx, out_file in enumerate(generated_clips):
-                with open(out_file, "rb") as file_data:
-                    st.download_button(
-                        label=f"⬇️ ડાઉનલોડ કરો ({os.path.basename(out_file)})",
-                        data=file_data,
-                        file_name=os.path.basename(out_file),
-                        mime="video/mp4",
-                        key=f"dl_{idx}"
-                    )
+            # Automatic / Instant Download Section
+            st.markdown("### 📥 ડાઉનલોડ સેક્શન (Instant Download)")
+            for idx, (out_file, mime_type) in enumerate(generated_clips):
                 if os.path.exists(out_file):
+                    with open(out_file, "rb") as file_data:
+                        st.download_button(
+                            label=f"⬇️ ડાઉનલોડ કરો: {os.path.basename(out_file)} ✅",
+                            data=file_data,
+                            file_name=os.path.basename(out_file),
+                            mime=mime_type,
+                            key=f"dl_{idx}"
+                        )
                     os.remove(out_file)
 
         clip.close()
