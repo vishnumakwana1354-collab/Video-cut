@@ -1,3 +1,0 @@
-   echo "streamlit" > requirements.txt
-   echo "moviepy" >> requirements.txt
-   
